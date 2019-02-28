@@ -1,6 +1,9 @@
 #### No BioMart & From InterVar to ClinAnnotation ####
-FromInterVarNoBioMart<-function(outdir="~/VarDetect/OneSample/Flow1/Flow1.1/Output3/",
-sourcedir="/colossus/home/vorthunju/VarDetect/OneSample/Flow1/Flow1.1/Flow1.1.1/PART3/Source/"){
+FromInterVarNoBioMart<-function(
+outdir="~/VarDetect/OneSample/Flow1/Flow1.1/Output3/"
+,
+sourcedir="/colossus/home/vorthunju/VarDetect/OneSample/Flow1/Flow1.1/Source/"
+){
 
 library(stringr)
 library(jsonlite)
@@ -64,12 +67,15 @@ for(i in 1:length(idx[,1])){
 	write(toJSON(rbind(tmp,temp2)),paste(outdir,"PTM_",idx$ENSP[i],".json",sep=""))
 }
 
+
 temp<-
 data.frame(
 Chr=temp$Chr,Start=temp$Start,End=temp$End,Ref=temp$Ref,Alt=temp$Alt,ExonicFunc.refGene=temp$ExonicFunc.refGene,AAChange.ensGene=temp$AAChange.ensGene,avsnp147=temp$avsnp147,gnomAD_genome_ALL=temp$gnomAD_genome_ALL,SIFT_pred=temp$SIFT_pred,Polyphen2_HDIV_pred=temp$Polyphen2_HDIV_pred,Polyphen2_HVAR_pred=temp$Polyphen2_HVAR_pred,LRT_pred=temp$LRT_pred,MutationTaster_pred=temp$MutationTaster_pred,MutationAssessor_pred=temp$MutationAssessor_pred,FATHMM_pred=temp$FATHMM_pred,PROVEAN_pred=temp$PROVEAN_pred,MetaSVM_pred=temp$MetaSVM_pred,MetaLR_pred=temp$MetaLR_pred,stringsAsFactors=F)															
 
 
 tempx<-cbind(input[0,],temp[0,])
+
+
 for(i in 1:length(input[,1])){
 	a=grep(input$ENST[i],temp$AAChange.ensGene)
 	b=grep(input$Protein_position[i],temp$AAChange.ensGene)
@@ -80,6 +86,86 @@ for(i in 1:length(input[,1])){
 tempx<-tempx[,-c(11,12)]
 
 write.table(tempx,paste(outdir,"out.Part3.vep.txt",sep=""),sep="\t",quote=F,row.names=F)
+
+
+
+
+#### intervar	
+intervar<-read.table(paste0(outdir,"intervar.hg19_multianno.txt.intervar"),sep="\t")
+	intervar<-data.frame(id = paste(paste("chr",intervar[,1],sep=""),intervar[,2],
+			paste(intervar[,4],intervar[,5],sep="/"),sep="_"),
+			InterVar=gsub(" PVS1.*","",gsub(".*rVar: ","",intervar[,14]))
+			,PSV1=gsub(" .*","",gsub(".*PVS1=","",intervar[,14]))
+			,PS=gsub("] .*","]",gsub(".*PS=","",intervar[,14]))
+			,PM=gsub("] .*","]",gsub(".*PM=","",intervar[,14]))
+			,PP=gsub("] .*","]",gsub(".*PM=","",intervar[,14]))
+			,BA1=gsub(" .*","",gsub(".*BA1=","",intervar[,14]))
+			,BS=gsub("] .*","]",gsub(".*BS=","",intervar[,14]))
+			,BP=gsub("] .*","]",gsub(".*BS=","",intervar[,14]))
+			,ACMG="ACMG:",stringsAsFactors=F)
+
+	for(i in 1:length(intervar[,1])){
+		temp<-intervar[i,]
+		intervar$ACMG[i]<-paste(if(temp$PSV1==1){"PSV1;"}
+					,if(gsub("1.*","",temp$PS)!=temp$PS){
+						paste("PS",nchar(gsub("1.*","",temp$PS)) - nchar(gsub(",","",gsub("1.*","",temp$PS))) + 1,";",sep="")}
+					,if(gsub("1.*","",temp$PM)!=temp$PM){
+						paste("PM",nchar(gsub("1.*","",temp$PM)) - nchar(gsub(",","",gsub("1.*","",temp$PM))) + 1,";",sep="")}
+					,if(gsub("1.*","",temp$PP)!=temp$PP){
+						paste("PP",nchar(gsub("1.*","",temp$PP)) - nchar(gsub(",","",gsub("1.*","",temp$PP))) + 1,";",sep="")}
+					,if(temp$BA1==1){"BA1;"}
+					,if(gsub("1.*","",temp$BS)!=temp$BS){
+						paste("BS",nchar(gsub("1.*","",temp$BS)) - nchar(gsub(",","",gsub("1.*","",temp$BS))) + 1,";",sep="")}
+					,if(gsub("1.*","",temp$BP)!=temp$BP){
+						paste("BP",nchar(gsub("1.*","",temp$BP)) - nchar(gsub(",","",gsub("1.*","",temp$BP))) + 1,";",sep="")},sep="")
+		}
+
+
+	write.table(intervar,paste(outdir,"Intervar.txt",sep=""),sep="\t",quote=F,row.names=F)
+
+	##### Load Ref ClnID #####
+	chr<-gsub("chr","",gsub("_.*","",intervar[,1]))
+	chr<-chr[!duplicated(chr)]
+	clnid<-data.frame(id="",id2="",id3="",id4="",stringsAsFactors=F)[0,]
+	for(i in chr){
+	temp<-intervar[gsub("chr","",gsub("_.*","",intervar[,1]))==i,]
+	temp<-substr(gsub(".*_","",gsub("_[A-Z].*","",temp[,1])),1,1)
+	temp<-temp[!duplicated(temp)]
+	for(j in temp)	clnid<-rbind(clnid,read.table(paste(sourcedir,"ClinVar/ClnVarID/",i,"/",j,".txt",sep=""),sep="\t",header=T))
+	}
+
+
+	id<-intervar[intervar[,1] %in% clnid[,1],1]
+	id<-as.character(id[!duplicated(id)])
+	clnid<-clnid[clnid[,1] %in% id,]
+
+	#### Load Ref clnsbmt ####
+	cnt<-nchar(clnid$id3)
+	cnt<-cnt[!duplicated(cnt)]
+
+	temp<-data.frame(id3="",sig="",pheno="",descrpt="",stringsAsFactors=F)[0,]
+	if(length(cnt[cnt<3])>0) temp<-rbind(temp,read.table(paste(sourcedir,"ClinVar/ClnVarSubmitted/1-2.txt",sep=""),sep="\t",header=T))
+	if(length(cnt[cnt>2])>0){
+	for(i in cnt[cnt>2]){
+	nmb<-as.numeric(substr(clnid[nchar(clnid$id3)==i,3],3,i))
+	nmb<-nmb[!duplicated(nmb)]
+	for(j in nmb) temp<-rbind(temp,read.table(paste(sourcedir,"ClinVar/ClnVarSubmitted/",i,"/",j,".txt",sep=""),sep="\t",header=T))
+		}
+	}
+
+	clnsbmt<-temp
+	temp<-temp[temp$descrpt !="-",]
+	clnsbmt<-clnsbmt[clnsbmt[,1] %in% clnid[,3],]
+	clnid<-clnid[clnid$id3 %in% temp$id3,]
+	write.table(clnid,paste(outdir,"ClnVarID.txt",sep=""),sep="\t",quote=F,row.names=F)
+	write.table(clnsbmt,paste(outdir,"ClnVarDetail.txt",sep=""),sep="\t",quote=F,row.names=F)
+
+	###InputIndex
+	inp<-read.table(paste0(outdir,"intervar.hg19_multianno.txt.intervar"),sep="\t")
+	inp<-data.frame(X_Uploaded_variation=paste(paste0("chr",inp[,1]),inp[,2],paste(inp[,4],inp[,5],sep="/"),sep="_"),SYMBOL=inp[,6],stringsAsFactors=F)
+	inp<-inp[inp[,1] %in% clnid[,1],]
+	inp<-inp[!duplicated(inp[,1]),]
+	write.table(inp,paste(outdir,"Part3.index.txt",sep=""),sep="\t",quote=F,row.names=F)
 
 return(idx)
 }
