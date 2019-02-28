@@ -59,6 +59,7 @@ input[grep("nonsyn",input$Consequence),]$IMPACT<-input[grep("nonsyn",input$Conse
 for(i in 1:length(idx[,1])){
 	tmp<-input[input$ENSP==idx$ENSP[i],]
 	tmp<-data.frame(coord=tmp$Protein_position,category=tmp$Consequence,value=tmp$IMPACT,stringsAsFactors=F)
+	tmp<-tmp[!duplicated(tmp[,1]),]
 	temp2<-tryCatch(fromJSON(paste(outdir,"PTM_",idx$ENSP[i],".jxson",sep="")),error=function(x){return(tmp[0,])})
 	write(toJSON(rbind(tmp,temp2)),paste(outdir,"PTM_",idx$ENSP[i],".json",sep=""))
 }
@@ -80,8 +81,7 @@ tempx<-tempx[,-c(11,12)]
 
 write.table(tempx,paste(outdir,"out.Part3.vep.txt",sep=""),sep="\t",quote=F,row.names=F)
 
-#return(idx)
-return(rbind(tmp,temp2))
+return(idx)
 }
 
 #################### PART2 Reporting ACMG ################################################
