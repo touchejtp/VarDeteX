@@ -155,8 +155,8 @@ intervar<-read.table(paste0(outdir,"intervar.hg19_multianno.txt.intervar"),sep="
 		}
 	}
 
-	clnsbmt<-temp
 	temp<-temp[temp$descrpt !="-",]
+	clnsbmt<-temp
 	clnsbmt<-clnsbmt[clnsbmt[,1] %in% clnid[,3],]
 	clnid<-clnid[clnid$id3 %in% temp$id3,]
 	write.table(clnid,paste(outdir,"ClnVarID.txt",sep=""),sep="\t",quote=F,row.names=F)
