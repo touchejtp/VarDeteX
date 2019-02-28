@@ -80,7 +80,8 @@ tempx<-tempx[,-c(11,12)]
 
 write.table(tempx,paste(outdir,"out.Part3.vep.txt",sep=""),sep="\t",quote=F,row.names=F)
 
-return(idx)
+#return(idx)
+return(rbind(tmp,temp2))
 }
 
 #################### PART2 Reporting ACMG ################################################
