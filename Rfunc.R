@@ -7,7 +7,9 @@ sourcedir="/colossus/home/vorthunju/VarDetect/OneSample/Flow1/Flow1.1/Source/"
 
 library(stringr)
 library(jsonlite)
+options(warn=-1)
 
+	
 ENSP=paste0(sourcedir,"ENSP.txt")
 RefENSP<-read.table(ENSP,sep="\t",header=T,stringsAsFactors=F)
 
